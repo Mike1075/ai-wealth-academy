@@ -1,5 +1,8 @@
-import type { MetaFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { Link, useLoaderData } from "@remix-run/react";
+import { json } from "@remix-run/node";
+import { supabase } from "~/lib/supabase";
+import type { Course } from "~/lib/supabase";
 
 export const meta: MetaFunction = () => {
   return [
@@ -8,7 +11,31 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+interface LoaderData {
+  courses: Course[];
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const { data: courses, error } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('获取课程失败:', error);
+      return json<LoaderData>({ courses: [] });
+    }
+
+    return json<LoaderData>({ courses: courses || [] });
+  } catch (error) {
+    console.error('课程数据加载失败:', error);
+    return json<LoaderData>({ courses: [] });
+  }
+}
+
 export default function Courses() {
+  const { courses } = useLoaderData<LoaderData>();
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
@@ -204,43 +231,54 @@ export default function Courses() {
               </div>
             </div>
 
-            {/* 其他赛道简化展示 */}
-            <div className="grid md:grid-cols-3 gap-8 mt-16">
-              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <div className="text-3xl mb-4">🧘</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">新消费产品经理</h3>
-                <p className="text-gray-600 mb-4">
-                  用代码疗愈赛博世界的灵魂。打造AI情绪树洞、疗愈师、解梦师
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-pink-600 font-medium">AI灵性疗愈产品MVP</span>
-                  <span className="text-sm text-gray-500">2周</span>
+            {/* 所有课程展示 */}
+            <div className="mt-16">
+              {courses.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {courses.map((course) => (
+                    <div key={course.id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                      <div className="text-3xl mb-4">
+                        {course.title.includes('游戏') ? '🎮' : 
+                         course.title.includes('全球化') ? '🌏' : 
+                         course.title.includes('新消费') ? '🧘' : 
+                         course.title.includes('APP') ? '📱' : 
+                         course.title.includes('自动化') ? '🤖' : '💡'}
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">{course.title}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-3">
+                        {course.description}
+                      </p>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-2xl font-bold text-blue-600">¥{course.price}</span>
+                        <span className="text-sm text-gray-500">{course.duration}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          course.level === '初级' ? 'bg-green-100 text-green-800' :
+                          course.level === '中级' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {course.level}
+                        </span>
+                        <Link 
+                          to={`/course/${course.id}`}
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                        >
+                          立即报名
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              
-              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <div className="text-3xl mb-4">📱</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">独立APP开发者</h3>
-                <p className="text-gray-600 mb-4">
-                  你的下一个App，在这里诞生。无代码打造时间管理、第二大脑、穿搭顾问App
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-orange-600 font-medium">App核心功能原型</span>
-                  <span className="text-sm text-gray-500">2周</span>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">📚</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">暂无课程</h3>
+                  <p className="text-gray-600">课程正在火热筹备中，敬请期待！</p>
                 </div>
-              </div>
-              
-              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <div className="text-3xl mb-4">🤖</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">自动化"一人公司"</h3>
-                <p className="text-gray-600 mb-4">
-                  你只负责创意，AI搞定其他所有。构建7x24小时自动运转的AI智能商业体
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-purple-600 font-medium">AI智能商业体</span>
-                  <span className="text-sm text-gray-500">2周</span>
-                </div>
-              </div>
+              )}
             </div>
 
           </div>
