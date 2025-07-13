@@ -15,14 +15,55 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const auth = {
   // 用户注册
   async signUp(email: string, password: string, userData?: { name?: string, phone?: string }) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData
+    try {
+      console.log("Starting user registration for:", email)
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
+        }
+      })
+
+      if (error) {
+        console.error("Supabase Auth Error:", error)
+        return { data: null, error }
       }
-    })
-    return { data, error }
+
+      console.log("User registration successful:", data)
+
+      // 如果注册成功，尝试创建用户记录
+      if (data.user && !error) {
+        try {
+          const { error: profileError } = await supabase
+            .from("users")
+            .insert({
+              auth_user_id: data.user.id,
+              email: data.user.email,
+              name: userData?.name || "",
+              phone: userData?.phone || "",
+              role: "user",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+
+          if (profileError) {
+            console.error("Error creating user profile:", profileError)
+          }
+        } catch (profileError) {
+          console.error("Exception creating user profile:", profileError)
+        }
+      }
+
+      return { data, error }
+    } catch (exception) {
+      console.error("Registration exception:", exception)
+      return { 
+        data: null, 
+        error: { message: "Registration failed. Please try again." }
+      }
+    }
   },
 
   // 用户登录
