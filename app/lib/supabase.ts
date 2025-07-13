@@ -33,10 +33,10 @@ export const auth = {
 
       console.log("User registration successful:", data)
 
-      // 如果注册成功，尝试创建用户记录
+      // 如果注册成功，尝试创建用户记录（使用管理员权限）
       if (data.user && !error) {
         try {
-          const { error: profileError } = await supabase
+          const { error: profileError } = await supabaseAdmin
             .from("users")
             .insert({
               auth_user_id: data.user.id,
@@ -50,6 +50,8 @@ export const auth = {
 
           if (profileError) {
             console.error("Error creating user profile:", profileError)
+          } else {
+            console.log("User profile created successfully")
           }
         } catch (profileError) {
           console.error("Exception creating user profile:", profileError)
