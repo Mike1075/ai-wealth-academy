@@ -2,10 +2,15 @@
   command = "npm run build"
   publish = "build/client"
 
-[functions]
-  node_bundler = "esbuild"
+[build.environment]
+  NODE_VERSION = "18"
 
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/server"
-  status = 200 
+[dev]
+  command = "npm run dev"
+  framework = "vite"
+
+# 环境变量示例 (实际值在Netlify Dashboard中设置)
+# SUPABASE_URL = "your-supabase-url"
+# SUPABASE_ANON_KEY = "your-supabase-anon-key"  
+# API_KEY = "your-api-key"
+# SESSION_SECRET = "your-session-secret"
